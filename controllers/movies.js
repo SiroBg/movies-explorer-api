@@ -1,5 +1,7 @@
 const Movie = require('../models/movie');
-const ErrorManage = require('../middlewares/error-manage');
+const BadRequestError = require('../errors/bad-request-error');
+const RightsError = require('../errors/rights-error');
+const NotFoundError = require('../errors/not-found-error');
 
 module.exports.getMovies = (req, res, next) => {
   Movie.find({})
@@ -41,9 +43,10 @@ module.exports.createMovie = (req, res, next) => {
     .then((movie) => res.send(movie))
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        next(new ErrorManage('переданы некорректные данные в методы создания фильма').manageBadRequestError());
+        next(new BadRequestError('Переданы некорректные данные в методы создания фильма.'));
+      } else {
+        next(err);
       }
-      next(err);
     });
 };
 
@@ -51,23 +54,24 @@ module.exports.deleteMovie = (req, res, next) => {
   Movie.findById(req.params.movieId)
     .then((movie) => {
       if (!movie) {
-        throw new ErrorManage('фильм не найден').manageNotFoundError();
+        throw new NotFoundError('Фильм не найден.');
       }
 
       if (String(movie.owner) !== req.user._id) {
-        throw new ErrorManage('нельзя удалять фильмы других пользователей').manageRightsError();
+        throw new RightsError('Нельзя удалять фильмы других пользователей.');
       }
 
       return movie;
     })
     .then((movie) => {
-      Movie.findByIdAndRemove(movie._id)
-        .then((data) => res.send(data));
+      movie.remove()
+        .then(() => res.send(movie));
     })
     .catch((err) => {
       if (err.name === 'CastError') {
-        next(new ErrorManage('некорректный id фильма').manageBadRequestError());
+        next(new BadRequestError('Некорректный id фильма'));
+      } else {
+        next(err);
       }
-      next(err);
     });
 };

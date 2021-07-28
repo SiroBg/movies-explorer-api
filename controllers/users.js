@@ -1,9 +1,12 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
-const ErrorManage = require('../middlewares/error-manage');
 
-const { NODE_ENV, JWT_SECRET } = process.env;
+const { JWT_SECRET } = require('../config');
+const BadRequestError = require('../errors/bad-request-error');
+const NotFoundError = require('../errors/not-found-error');
+const ConflictError = require('../errors/conflict-error');
+const AuthError = require('../errors/auth-error');
 
 module.exports.createUser = (req, res, next) => {
   bcrypt.hash(req.body.password, 10)
@@ -22,14 +25,14 @@ module.exports.createUser = (req, res, next) => {
         }))
         .catch((err) => {
           if (err.name === 'ValidationError') {
-            next(new ErrorManage('переданы некорректные данные в методы создания пользователя').manageBadRequestError());
+            next(new BadRequestError('Переданы некорректные данные в методы создания пользователя.'));
           }
 
           if (err.name === 'MongoError' && err.code === 11000) {
-            next(new ErrorManage('пользователь с такой почтой уже зарегестрирован').manageConflictError());
+            next(new ConflictError('Пользователь с такой почтой уже зарегестрирован.'));
+          } else {
+            next(err);
           }
-
-          next(err);
         });
     });
 };
@@ -40,16 +43,13 @@ module.exports.updateUserInfo = (req, res, next) => {
     .then((user) => res.send(user))
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        next(new ErrorManage('переданы некорректные данные в методы обновления информации о пользователе').manageBadRequestError());
-      }
-      if (err.name === 'CastError') {
-        next(new ErrorManage('некорректный id пользователя').manageBadRequestError());
+        next(new BadRequestError('Переданы некорректные данные в методы обновления информации о пользователе.'));
       }
       if (err.name === 'MongoError' && err.code === 11000) {
-        next(new ErrorManage('пользователь с такой почтой уже зарегестрирован').manageConflictError());
+        next(new ConflictError('Пользователь с такой почтой уже зарегестрирован.'));
+      } else {
+        next(err);
       }
-
-      next(err);
     });
 };
 
@@ -60,29 +60,23 @@ module.exports.login = (req, res, next) => {
     .then((user) => {
       const token = jwt.sign(
         { _id: user._id },
-        NODE_ENV === 'production' ? JWT_SECRET : 'dev-secret',
+        JWT_SECRET,
         { expiresIn: '7d' },
       );
 
       res.send({ token });
     })
-    .catch(() => next(new ErrorManage('неправильная почта или пароль').manageAuthError()));
+    .catch(() => next(new AuthError('Неправильная почта или пароль.')));
 };
 
 module.exports.getCurrentUser = (req, res, next) => {
   User.findById(req.user._id)
     .then((user) => {
       if (!user) {
-        throw new ErrorManage('пользователь не найден').manageNotFoundError();
+        throw new NotFoundError('Пользователь не найден.');
       }
 
       return res.send(user);
     })
-    .catch((err) => {
-      if (err.name === 'CastError') {
-        next(new ErrorManage('некорректный id пользователя').manageBadRequestError());
-      }
-
-      next(err);
-    });
+    .catch(next);
 };

@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const validator = require('validator');
 
 const cardSchema = new mongoose.Schema({
   country: {
@@ -26,7 +27,7 @@ const cardSchema = new mongoose.Schema({
     required: true,
     validate: {
       validator(v) {
-        return /^https?:\/\/(www\.)?.{1,}#?$/.test(v);
+        return validator.isURL(v);
       },
       message: 'Это не ссылка!',
     },
@@ -36,7 +37,7 @@ const cardSchema = new mongoose.Schema({
     required: true,
     validate: {
       validator(v) {
-        return /^https?:\/\/(www\.)?.{1,}#?$/.test(v);
+        return validator.isURL(v);
       },
       message: 'Это не ссылка!',
     },
@@ -46,7 +47,7 @@ const cardSchema = new mongoose.Schema({
     required: true,
     validate: {
       validator(v) {
-        return /^https?:\/\/(www\.)?.{1,}#?$/.test(v);
+        return validator.isURL(v);
       },
       message: 'Это не ссылка!',
     },
@@ -57,7 +58,7 @@ const cardSchema = new mongoose.Schema({
     required: true,
   },
   movieId: {
-    type: String,
+    type: Number,
     required: true,
   },
   nameRU: {
