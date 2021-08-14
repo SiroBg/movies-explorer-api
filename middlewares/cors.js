@@ -1,9 +1,9 @@
 const allowCors = [
-  'https://morningstar.nomoredomains.monster',
-  'http://morningstar.nomoredomains.monster',
+  'https://sirobg-movies.nomoredomains.club',
+  'http://sirobg-movies.nomoredomains.club',
   'https://praktikum.tk',
   'http://praktikum.tk',
-  'localhost:3000',
+  'http://localhost:3000',
 ];
 
 module.exports = (req, res, next) => {
